@@ -15,29 +15,19 @@ bool caractereValido(char c)  {
 void setup() {
   delay(500);                 // aguarda o sistema estabilizar
   Serial.begin(9600);         // inicia a serial
-  pinMode(pinIn, INPUT);      // configura e inicia
-  pinMode(pinOut, OUTPUT);    // as entradas
-  digitalWrite(pinOut, LOW);  // e saídas
+  pinMode(PIN_IN, INPUT);      // configura e inicia
+  pinMode(PIN_OUT, OUTPUT);    // as entradas
+  digitalWrite(PIN_OUT, LOW);  // e saídas
 }
-
-void loop() {
-
-  if(!digitalRead(pinIn)) {           // se detectar nova conexão à página
-    digitalWrite(pinOut, LOW);        // avisa que detectou
-    delay(100);                       // aguarda 100 milisegundos
-    while(Serial.available())
-      Serial.read();                  // esvazia o buffer
-    digitalWrite(pinOut, HIGH);       // prepara para a proxima conexão
-  }
-
-  if(Serial.available() && Serial.read() == caractereInicio) {  // se há dados e o primeiro é caractereInicio
+void processa_entrada(){
+  // se há dados e o primeiro é caractereInicio
   dado_novo = true;                                   // armazena que há dado novo
     r = -1;                                           // prepara o indice de recebido
-    while((c = Serial.read()) != caractereFinal)      // enquanto nao for o caractere finalizador
+    while((c = Serial.read()) != CARACTERE_FINAL)      // enquanto nao for o caractere finalizador
       if(caractereValido(c))                          // se for um caractere valido
         recebido[++ r] = c;                           // o armazena a incrementa o indice
 
-    for(v = 0; recebido[v] != caractereSepara; v ++)  // do primeiro caractere até caractereSepara
+    for(v = 0; recebido[v] != CARACTERE_SEPARA; v ++)  // do primeiro caractere até caractereSepara
       vel[v] = recebido[v];                           // copia-o para vel
     vel[v] = '\0';                                    // insere o caractere nulo na posição posterior à do ultimo copiado
 
@@ -48,6 +38,9 @@ void loop() {
             r - v : 3] = '\0';  // se sim, insere o caractere nulo na posição posterior à do ultimo copiado. se não, o insere na ultima posição de angulo
   }
 
+
+
+void processa_dado_novo(){
   if(dado_novo) { // se recebeu um novo dado
     vel_int = atoi(vel);  vel_int = map(vel_int, 0, 100, 0, 255); // transforma a velocidade em um inteiro e, então, o mapeia entre 0 e 255
     ang_int = atoi(angulo);                                       // transforma o angulo em um inteiro
@@ -62,10 +55,27 @@ void loop() {
       val_mA = (uint8_t) vel_int; }                                             // o motor A recebe a velocidade indicada no joystick
 
     if(quadrante < 3) {                                 // se estiver em cima/na frente
-      analogWrite(in2, val_mA); analogWrite(in1, 0);    // aciona os motores
-      analogWrite(in4, val_mB); analogWrite(in3, 0);  } // para frente
+      analogWrite(IN2, val_mA); analogWrite(IN1, 0);    // aciona os motores
+      analogWrite(IN4, val_mB); analogWrite(IN3, 0);  } // para frente
     else {                                              // senão
-      analogWrite(in2, 0); analogWrite(in1, val_mA);    // aciona os motores
-      analogWrite(in4, 0); analogWrite(in3, val_mB);  } // para trás
-  } dado_novo = false;                                  // indica que o dado já foi tratado
+      analogWrite(IN2, 0); analogWrite(IN1, val_mA);    // aciona os motores
+      analogWrite(IN4, 0); analogWrite(IN3, val_mB);  } // para trás
+  } dado_novo = false;   
+}
+
+void loop() {
+
+  if(!digitalRead(PIN_IN)) {           // se detectar nova conexão à página
+    digitalWrite(PIN_OUT, LOW);        // avisa que detectou
+    delay(100);                       // aguarda 100 milisegundos
+    while(Serial.available())
+      Serial.read();                  // esvazia o buffer
+    digitalWrite(PIN_OUT, HIGH);       // prepara para a proxima conexão
+  }
+
+  if(Serial.available() && Serial.read() == CARACTERE_INICIO) {
+    processa_entrada();
+    processa_dado_novo();
+                                 // indica que o dado já foi tratado
+}
 }
