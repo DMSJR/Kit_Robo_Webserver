@@ -14,7 +14,7 @@
 
 bool evtConectado, srvRestart, apagarCredencial, deveIniciarAPSTA; //declara booleanos globais
 
-String parametrosVariaveis[qtdArquivos];  // strings variaveis
+String parametrosVariaveis[QTD_ARQUIVOS];  // strings variaveis
 String selCred;                           // globais
 
 AsyncWebServer server(80);  // instancia o servidor e o atribui à porta 80
@@ -23,10 +23,10 @@ AsyncWebSocket ws("/ws");   // instancia o websocket
 #ifdef DEBUG
 void imprimeTodosArquivos(const char * msg) {
   Serial.print("Inicia imprime todos os arquivos em: "); Serial.println(msg);
-  File file[qtdArquivos];
-  for(size_t i = 0; i < qtdArquivos; i ++) {
-    Serial.print(paramVec[i]);
-    file[i] = LittleFS.open(paths[i], "r");
+  File file[QTD_ARQUIVOS];
+  for(size_t i = 0; i < QTD_ARQUIVOS; i ++) {
+    Serial.print(PARAM_VEC[i]);
+    file[i] = LittleFS.open(PATHS[i], "r");
     Serial.print(": "); Serial.println(file[i].size());
     while(file[i].available())
       Serial.print((char) file[i].read());
@@ -40,9 +40,9 @@ void imprimeTodosArquivos(const char * msg) {
 String modelos(const String& var) {                                          // callback para construcao da pagina
   String retorno;                                                            // declara string que será enviada para pagina
   if(var == "modeloLista") {                                                 // se for o modelo para receber a lista de redes
-    File fileSSID = LittleFS.open(paths[iSSID], "r");                        // abre o arquivo com os nomes das redes
+    File fileSSID = LittleFS.open(PATHS[I_SSID], "r");                        // abre o arquivo com os nomes das redes
     while(fileSSID.available()) {                                            // enquanto houver conteudo
-      String nomeSSID = fileSSID.readStringUntil(caractereFinal);            // armazena a linha em nomeSSID
+      String nomeSSID = fileSSID.readStringUntil(CARACTERE_FINAL);            // armazena a linha em nomeSSID
       retorno += "<option value=" + nomeSSID + ">" + nomeSSID + "</option>"; // armazena a tag para listar a rede
     }
     fileSSID.close();                                     // fecha o arquivo com os nomes das redes
@@ -64,12 +64,12 @@ bool caractereValido(char c) {
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)  { // definição da tratativa de evento de servidor assíncrono
   if(type == WS_EVT_DATA) {                                                        // se for o recebimento de dados e o Arduino puder receber
     char *data_ = (char*) data;                                                    // registra todos os dados recebidos do servidor
-    Serial.write(caractereInicio);                                                 // envia o caractere de inicio de transmissao
-    for(uint8_t i = 0; caractereValido(data_[i]) and i < tamanhoMaximoDados; i ++) // enquanto for um caractere valido e o tamanho for inferior ao maximo
+    Serial.write(CARACTERE_INICIO);                                                 // envia o caractere de inicio de transmissao
+    for(uint8_t i = 0; caractereValido(data_[i]) and i < TAMANHO_MAXIMO_DADOS; i ++) // enquanto for um caractere valido e o tamanho for inferior ao maximo
       Serial.write(data_[i]);                                                      // envia este dado na serial
-    Serial.write(caractereFinal); }                                                // envia o caractere final para tratamento
+    Serial.write(CARACTERE_FINAL); }                                                // envia o caractere final para tratamento
   else if(type == WS_EVT_CONNECT) { // se for a conexao à pagina
-    digitalWrite(pinOut, LOW);      // indica colocando a saída em nível baixo
+    digitalWrite(PIN_OUT, LOW);      // indica colocando a saída em nível baixo
     evtConectado = true;            // registra que conectou
     #ifdef DEBUG
       Serial.println("conectado ao websocket");
@@ -80,17 +80,17 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 void appendFile(fs::FS &fs, const char * path, const char * message) {
   File file = fs.open(path, "a"); // abre o arquivo para escrita
   file.print(message);            // escreve o conteudo no arquivo
-  file.print(caractereFinal);     // escreve o caractere finalizador
+  file.print(CARACTERE_FINAL);     // escreve o caractere finalizador
   file.close();                   // fecha o arquivo
 }
 
 void apagaCredencial(fs::FS &fs, const char *credencial) {
-  File fileSSID = fs.open(paths[iSSID], "r"); // abre o arquivo com o nome das redes
+  File fileSSID = fs.open(PATHS[I_SSID], "r"); // abre o arquivo com o nome das redes
   uint8_t linhaLeitura = 0;                   // declara o numero da linha lida como 0
   bool credCadastrada = false;                // variavel de controle
 
   while(fileSSID.available() and !credCadastrada)                               // enquanto houver conteudo e nao tiver encontrado o nome da rede
-    if(linhaLeitura ++; fileSSID.readStringUntil(caractereFinal) == credencial) // incrementa o numero da linha e verifica se o conteudo desta é o nome da rede buscada
+    if(linhaLeitura++; fileSSID.readStringUntil(CARACTERE_FINAL) == credencial) // incrementa o numero da linha e verifica se o conteudo desta é o nome da rede buscada
       credCadastrada = true;                                                    // se sim, registra que encontrou
 
   fileSSID.close();           // fecha o arquivo
@@ -99,20 +99,20 @@ void apagaCredencial(fs::FS &fs, const char *credencial) {
   #ifdef DEBUG
     imprimeTodosArquivos("apagaCredencial1");
   #endif
-  for(size_t i = 0; i < qtdArquivos; i ++) {                             // ao longo dos quatro arquivos pertinentes às redes
+  for(size_t i = 0; i < QTD_ARQUIVOS; i ++) {                             // ao longo dos quatro arquivos pertinentes às redes
     uint8_t linhaEscrita = 1;                                            // inicia a linha a receber conteudo em 1
     String novoConteudo = "";                                            // inicia o conteudo como string vazia
     char caractereArquivo;                                               // declara variavel para armazenar o caractere
-    File file = LittleFS.open(paths[i], "r");                            // abre o arquivo
+    File file = LittleFS.open(PATHS[i], "r");                            // abre o arquivo
     while(file.available()) {                                            // enquanto houver conteudo
       caractereArquivo = file.read();                                    // le um caractere
       if(linhaEscrita != linhaLeitura) novoConteudo += caractereArquivo; // se nao estiver na linha a ser apagada, armazena o caractere em novoConteudo
-      if(caractereArquivo == caractereFinal) linhaEscrita ++;            // se for caractere de quebra de linha, incrementa o numero da linha
+      if(caractereArquivo == CARACTERE_FINAL) linhaEscrita ++;            // se for caractere de quebra de linha, incrementa o numero da linha
     }
     file.close();                                                // fecha o arquivo
-    file = LittleFS.open(paths[i], "w");                         // abre o arquivo para escrita
+    file = LittleFS.open(PATHS[i], "w");                         // abre o arquivo para escrita
     file.print(novoConteudo);                                    // escreve o novo conteudo no arquivo
-    if(linhaLeitura == linhaEscrita) file.print(caractereFinal); // se tiver apagado a ultima linha, escreve uma quebra de linha
+    if(linhaLeitura == linhaEscrita) file.print(CARACTERE_FINAL); // se tiver apagado a ultima linha, escreve uma quebra de linha
     file.close();                                                // fecha o arquivo
   }
   #ifdef DEBUG
@@ -121,8 +121,8 @@ void apagaCredencial(fs::FS &fs, const char *credencial) {
 }
 
 void resetaCredenciais(fs::FS &fs) {
-  for(size_t i = 0; i < qtdArquivos; i ++) // para todos os arquivos pertinentes às redes
-    fs.remove(paths[i]);                   // apaga o conteudo do arquivo
+  for(size_t i = 0; i < QTD_ARQUIVOS; i ++) // para todos os arquivos pertinentes às redes
+    fs.remove(PATHS[i]);                   // apaga o conteudo do arquivo
 }
 
 bool initWiFi() {
@@ -132,44 +132,44 @@ bool initWiFi() {
   WiFi.mode(WIFI_STA);                                  // configura o modo como STA
   bool controleWiFi = false, IPouGatewayVazios = false; // declara variaveis de controle
 
-  File file[qtdArquivos];                   // declara vetor de manipulador de arquivos
-  for(size_t i = 0; i < qtdArquivos; i ++)  // para todos os arquivos
-    file[i] = LittleFS.open(paths[i], "r"); // abre o arquivo
+  File file[QTD_ARQUIVOS];                   // declara vetor de manipulador de arquivos
+  for(size_t i = 0; i < QTD_ARQUIVOS; i ++)  // para todos os arquivos
+    file[i] = LittleFS.open(PATHS[i], "r"); // abre o arquivo
   
   while(file[0].available()) {                                          // enquanto houver redes cadastradas a serem verificadas
-    for(size_t i = 0; i < qtdArquivos; i ++)                            // para todos os arquivos
-      parametrosVariaveis[i] = file[i].readStringUntil(caractereFinal); // armazena o conteudo da linha na correspondente posicao do vetor de parametros
+    for(size_t i = 0; i < QTD_ARQUIVOS; i ++)                            // para todos os arquivos
+      parametrosVariaveis[i] = file[i].readStringUntil(CARACTERE_FINAL); // armazena o conteudo da linha na correspondente posicao do vetor de parametros
 
     IPouGatewayVazios = false;                                                  // reseta variavel de controle
-    if(parametrosVariaveis[iIP] == "" or parametrosVariaveis[iGateway] == "") { // se o IP ou o gateway estiver vazio...
+    if(parametrosVariaveis[I_IP] == "" or parametrosVariaveis[I_GATEWAY] == "") { // se o IP ou o gateway estiver vazio...
       #ifdef DEBUG
         Serial.println("IP e Gateway vazios");
       #endif
       IPouGatewayVazios = true;                                                    // registra que o IP ou o gateway está vazio
     } else {                                                                       // senao...
       IPAddress IPLocal, gatewayLocal;                                             // declara variaveis referentes a IP
-      IPLocal.fromString(parametrosVariaveis[iIP].c_str());                        // armazena IP baseado na string do parametro IP
-      gatewayLocal.fromString(parametrosVariaveis[iGateway].c_str());              // armazena gateway baseado na string do parametro gateway
+      IPLocal.fromString(parametrosVariaveis[I_IP].c_str());                        // armazena IP baseado na string do parametro IP
+      gatewayLocal.fromString(parametrosVariaveis[I_GATEWAY].c_str());              // armazena gateway baseado na string do parametro gateway
       if(!WiFi.config(IPLocal, gatewayLocal, IPAddress(255, 255, 0, 0))) continue; // se falhar na configuracao, pula a parte do loop
     }
     #ifdef DEBUG
     Serial.print("rede testada por initWiFi:");
-    for(size_t i = 0; i < qtdArquivos; i ++) {
+    for(size_t i = 0; i < QTD_ARQUIVOS; i ++) {
       Serial.print(' '); Serial.print(parametrosVariaveis[i]);
     } 
     Serial.println(" encerra detalhes da rede testada por initWiFi:");
     #endif
-    WiFi.begin(parametrosVariaveis[iSSID].c_str(), parametrosVariaveis[iPass].c_str()); // inicia o WiFi
-    delay(tempoInicioWiFi);                                                             // aguarda o tempo estimado
+    WiFi.begin(parametrosVariaveis[I_SSID].c_str(), parametrosVariaveis[I_PASS].c_str()); // inicia o WiFi
+    delay(TEMPO_INICIO_WIFI);                                                             // aguarda o tempo estimado
     if(controleWiFi = (WiFi.status() == WL_CONNECTED)) break;                           // se conectar, sai do loop
   }
 
-  for(size_t i = 0; i < qtdArquivos; i ++) // para todos os arquivos
+  for(size_t i = 0; i < QTD_ARQUIVOS; i ++) // para todos os arquivos
     file[i].close();                       // fecha o arquivo
   #ifdef DEBUG
   if(controleWiFi) {
     Serial.print("rede conectada por initWiFi:");
-    for(size_t i = 0; i < qtdArquivos; i ++) {
+    for(size_t i = 0; i < QTD_ARQUIVOS; i ++) {
       Serial.print(' '); Serial.print(parametrosVariaveis[i]);
     }
     Serial.print(" IP real: "); Serial.print(WiFi.localIP());
@@ -188,9 +188,9 @@ void setup() {
   Serial.begin(9600);
   #endif
 
-  pinMode(pinIn, INPUT);      // inicia a entrada
-  pinMode(pinOut, OUTPUT);    // e a saída
-  digitalWrite(pinOut, HIGH); // digitais
+  pinMode(PIN_IN, INPUT);      // inicia a entrada
+  pinMode(PIN_OUT, OUTPUT);    // e a saída
+  digitalWrite(PIN_OUT, HIGH); // digitais
 
   deveIniciarAPSTA = evtConectado = srvRestart = apagarCredencial = false; // inicializa variaveis de controle
 
@@ -208,18 +208,18 @@ void setup() {
       imprimeTodosArquivos("appendFile1");
     #endif
     for(uint8_t i = 0; i < params; i ++) {         // para cada parametro
-      AsyncWebParameter* p = request->getParam(i); // registra o parametro
+      const AsyncWebParameter* p = request->getParam(i); // registra o parametro
       #ifdef DEBUG
         Serial.print("parametro cadastrado: ");
         Serial.print(p->name()); Serial.print(' ');
       #endif
-      for(size_t j = 0; j < qtdArquivos; j ++) { // para todos os arquivos
-        if(p->name() == paramVec[j]) {           // se o parametro for referente ao arquivo
+      for(size_t j = 0; j < QTD_ARQUIVOS; j ++) { // para todos os arquivos
+        if(p->name() == PARAM_VEC[j]) {           // se o parametro for referente ao arquivo
           #ifdef DEBUG
             Serial.println(p->value());
           #endif
           parametrosVariaveis[j] = p->value();                            // registra o parametro no vetor global de parametros
-          appendFile(LittleFS, paths[j], parametrosVariaveis[j].c_str()); // adiciona o parametro ao respectivo arquivo
+          appendFile(LittleFS, PATHS[j], parametrosVariaveis[j].c_str()); // adiciona o parametro ao respectivo arquivo
         }
       }
     }
@@ -232,7 +232,7 @@ void setup() {
   });
 
   server.on("/Apaga", HTTP_POST, [](AsyncWebServerRequest *request) {              // quando receber solicitacao post com esta url
-    if(AsyncWebParameter* p = request->getParam(0); p->name() == paramInputCred) { // se o parametro for o de exclusao de rede
+    if(const AsyncWebParameter* p = request->getParam(0); p->name() == PARAM_INPUT_CRED) { // se o parametro for o de exclusao de rede
       selCred = p->value();                                                        // armazena o parametro
       #ifdef DEBUG
         Serial.print("Rede deletada: "); Serial.println(selCred);
@@ -254,20 +254,21 @@ void setup() {
 
   if((!initWiFi()) or deveIniciarAPSTA) {                // se não conseguir se conectar a uma rede ou se conectar sem configurar o IP
     WiFi.mode(deveIniciarAPSTA ? WIFI_AP_STA : WIFI_AP); // configura o wifi de acordo com o caso
-    WiFi.softAP(nomeAP, senhaAP);                // inicia o AP
+    WiFi.softAP(NOME_AP, SENHA_AP);                // inicia o AP
     #ifdef DEBUG
       Serial.print("modo: "); Serial.println(WiFi.getMode());
     #endif
   }
   
   server.begin(); // inicia o servidor
+  initWiFi();
 
   #ifdef DEBUG
     Serial.flush();
     Serial.end();
   #endif
-  pinMode(pinRX, INPUT_PULLUP);  // configura o pino Rx como input com pullup
-  if(!digitalRead(pinRX)) {      // se o pino estiver conectado ao GND...
+  pinMode(PIN_RX, INPUT_PULLUP);  // configura o pino Rx como input com pullup
+  if(!digitalRead(PIN_RX)) {      // se o pino estiver conectado ao GND...
     resetaCredenciais(LittleFS); // reseta as credenciais
     ESP.restart();               // reinicia o ESP
   }
@@ -287,8 +288,8 @@ void loop() {
     apagarCredencial = false;                   // registra que apagou
   }
 
-  if(evtConectado and digitalRead(pinIn)) { // se houve conexão à página
-    digitalWrite(pinOut, HIGH);             // envia um sinal digital de nível alto
+  if(evtConectado and digitalRead(PIN_IN)) { // se houve conexão à página
+    digitalWrite(PIN_OUT, HIGH);             // envia um sinal digital de nível alto
     evtConectado = false;                   // reseta a variavel de controle
   }
 
@@ -301,7 +302,7 @@ void loop() {
     #endif
     if(deveIniciarAPSTA) {                  // se for necessario iniciar o AP para verificar o IP
       WiFi.mode(WIFI_AP_STA);               // configura para APSTA
-      WiFi.softAP(nomeAP, senhaAP); // inicia o AP
+      WiFi.softAP(NOME_AP, SENHA_AP); // inicia o AP
       #ifdef DEBUG_LOOP
         Serial.println("abre AP para verificar IP");
       #endif
@@ -315,7 +316,7 @@ void loop() {
     #endif
   }
 
-  if(millis() - tempoDecorrido >= intervaloWiFi) { // a cada intervaloWiFi ms
+  if(millis() - tempoDecorrido >= INTERVALO_WIFI) { // a cada INTERVALO_WIFI ms
     tempoDecorrido = millis();                     // atualiza o tempo
     #ifdef DEBUG_LOOP
       Serial.println("confere conexao");
